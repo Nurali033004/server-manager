@@ -28,7 +28,7 @@ if (-not (Test-Path $BotExePath)) {
 
 # 2. Boshqaruv fayllarini yuklab olish (Start/Stop/Uninstall)
 $BaseUrl = "https://raw.githubusercontent.com/Nurali033004/server-manager/main"
-$Scripts = @("start.ps1", "stop.ps1", "uninstall.ps1")
+$Scripts = @("start.ps1", "stop.ps1", "uninstall.ps1", "start.bat", "stop.bat", "uninstall.bat")
 
 Write-Host "[2/4] Yordamchi fayllar yuklanmoqda..." -ForegroundColor Green
 foreach ($Script in $Scripts) {
