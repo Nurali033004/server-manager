@@ -16,34 +16,34 @@ powershell -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::Security
 ## 📂 Qo'lda O'rnatish
 Agar avtomatik o'rnatish ishlamasa:
 
-### 1-qadam: Fayllarni yuklab olish
-GitHubdan `SystemBot.exe` va `install.ps1` fayllarini yuklab oling.
+## 🎮 Boshqarish (Istalgan joydan)
+Agar siz `SystemBot` papkasiga kirmasdan turib (masalan, `C:\Users\User>` da turib) boshqarmoqchi bo'lsangiz:
 
-## 🎮 Boshqarish (Oson)
-Bot o'rnatilgandan so'ng, `SystemBot` papkasi ichiga kiring:
-
+**▶️ ISHGA TUSHIRISH:**
 ```cmd
-cd SystemBot
+.\SystemBot\start.bat
 ```
-
-Keyin istalgan birini yozing (yoki sichqoncha bilan 2 marta bosing):
 
 **🛑 TO'XTATISH:**
 ```cmd
-stop.bat
+.\SystemBot\stop.bat
 ```
 
-**▶️ ISHGA TUSHIRISH (Orqa fonda):**
+**🗑 O'CHIRISH:**
 ```cmd
-start.bat
+.\SystemBot\uninstall.bat
 ```
 
-## 🗑 O'chirish (Uninstall)
-Botni butunlay o'chirish uchun:
+## 📊 Statistika va Monitoring
+Siz bu botni **GitHub** orqali tarqatayotganingiz uchun, kimlar yuklab olayotganini GitHubning o'zida ko'rishingiz mumkin:
 
-```cmd
-uninstall.bat
-```
+1.  GitHub repozitoriysiga kiring.
+2.  Tepadan **Insights** bo'limini tanlang.
+3.  Chap tomondan **Traffic** ga bosing.
+    *   **Git clones**: Nechi kishi botni o'rnatib oldi.
+    *   **Visitors**: Nechi kishi ko'rdi.
+
+*Eslatma: GitHub "Online/Offline" holatini real vaqtda ko'rsatmaydi, chunki har bir bot alohida kompyuterda ishlaydi va markaziy serverga ulanmagan. Bu xavfsizlik uchun ham yaxshi.*
 
 ### 1-qadam: Fayllarni yuklab olish
 Ushbu loyiha fayllarini kompyuteringizga yuklab oling yoki `git clone` qiling.
