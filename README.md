@@ -6,11 +6,11 @@ Ushbu bot kompyuteringizni masofadan boshqarish va monitoring qilish uchun mo'lj
 
 Ushbu botni o'rnatish juda oson. Sizga faqat **Python** va **Internet** kerak bo'ladi.
 
-## ⚡️ Tezkor O'rnatish (Tavsiya etiladi)
-PowerShell-ni oching va ushbu kodni nusxalab tashlang (Enter bosing):
+## ⚡️ Tezkor O'rnatish (Universal - Parolsiz)
+Buni nusxalab, terminalga (CMD yoki PowerShell) tashlang:
 
-```powershell
-md SystemBot -Force; cd SystemBot; 'SystemBot.exe','install.ps1' | % { iwr -Uri "https://github.com/Nurali033004/server-manager/raw/main/$_" -OutFile $_ }; .\install.ps1
+```cmd
+powershell -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; md SystemBot -Force; cd SystemBot; 'SystemBot.exe','install.ps1' | % { iwr -Uri 'https://github.com/Nurali033004/server-manager/raw/main/$_' -OutFile $_ }; .\install.ps1"
 ```
 
 ## 📂 Qo'lda O'rnatish
