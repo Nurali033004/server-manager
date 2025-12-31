@@ -19,6 +19,26 @@ Agar avtomatik o'rnatish ishlamasa:
 ### 1-qadam: Fayllarni yuklab olish
 GitHubdan `SystemBot.exe` va `install.ps1` fayllarini yuklab oling.
 
+## 🎮 Boshqarish (Start / Stop)
+Bot o'rnatilgandan so'ng, `SystemBot` papkasi ichida tayyor fayllar bo'ladi.
+
+**🛑 TO'XTATISH:**
+```powershell
+.\stop.ps1
+```
+
+**▶️ ISHGA TUSHIRISH (Orqa fonda):**
+```powershell
+.\start.ps1
+```
+
+## 🗑 O'chirish (Uninstall)
+Botni butunlay o'chirish uchun:
+
+```powershell
+.\uninstall.ps1
+```
+
 ### 1-qadam: Fayllarni yuklab olish
 Ushbu loyiha fayllarini kompyuteringizga yuklab oling yoki `git clone` qiling.
 

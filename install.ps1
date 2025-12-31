@@ -13,7 +13,7 @@ Write-Host ""
 $BotExeUrl = "https://github.com/Nurali033004/server-manager/raw/main/SystemBot.exe"
 $BotExePath = "$PSScriptRoot\SystemBot.exe"
 
-Write-Host "[1/3] Bot fayli yuklanmoqda..." -ForegroundColor Green
+Write-Host "[1/4] Bot fayli yuklanmoqda..." -ForegroundColor Green
 if (-not (Test-Path $BotExePath)) {
     try {
         Invoke-WebRequest -Uri $BotExeUrl -OutFile $BotExePath
@@ -26,11 +26,28 @@ if (-not (Test-Path $BotExePath)) {
     Write-Host "✅ Bot fayli mavjud." -ForegroundColor Green
 }
 
-# 2. Cloudflared yuklab olish
+# 2. Boshqaruv fayllarini yuklab olish (Start/Stop/Uninstall)
+$BaseUrl = "https://raw.githubusercontent.com/Nurali033004/server-manager/main"
+$Scripts = @("start.ps1", "stop.ps1", "uninstall.ps1")
+
+Write-Host "[2/4] Yordamchi fayllar yuklanmoqda..." -ForegroundColor Green
+foreach ($Script in $Scripts) {
+    $ScriptPath = "$PSScriptRoot\$Script"
+    if (-not (Test-Path $ScriptPath)) {
+        try {
+            Invoke-WebRequest -Uri "$BaseUrl/$Script" -OutFile $ScriptPath
+            Write-Host "   + $Script yuklandi" -ForegroundColor Gray
+        } catch {
+            Write-Host "   - $Script yuklab bo'lmadi (muhim emas)" -ForegroundColor DarkGray
+        }
+    }
+}
+
+# 3. Cloudflared yuklab olish
 $CloudflaredUrl = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
 $CloudflaredPath = "$PSScriptRoot\cloudflared.exe"
 
-Write-Host "[2/3] Cloudflared.exe tekshirilmoqda..." -ForegroundColor Green
+Write-Host "[3/4] Cloudflared.exe tekshirilmoqda..." -ForegroundColor Green
 if (-not (Test-Path $CloudflaredPath)) {
     Write-Host "⏳ Cloudflared yuklanmoqda... (Biroz kuting)" -ForegroundColor Yellow
     try {
@@ -43,8 +60,8 @@ if (-not (Test-Path $CloudflaredPath)) {
     Write-Host "✅ Cloudflared mavjud." -ForegroundColor Green
 }
 
-# 3. Sozlamalar (.env)
-Write-Host "[3/3] Sozlamalar (.env fayl)" -ForegroundColor Green
+# 4. Sozlamalar (.env)
+Write-Host "[4/4] Sozlamalar (.env fayl)" -ForegroundColor Green
 $EnvPath = "$PSScriptRoot\.env"
 
 if (-not (Test-Path $EnvPath)) {
@@ -70,5 +87,5 @@ if (-not (Test-Path $EnvPath)) {
 # Botni ishga tushirish
 Write-Host ""
 Write-Host "🎉 O'rnatish tugadi! Bot ishga tushirilmoqda..." -ForegroundColor Green
-Start-Process -FilePath "$BotExePath"
+Start-Process -FilePath "$BotExePath" -WindowStyle Hidden
 Write-Host "Bot orqa fonda ishga tushdi."
