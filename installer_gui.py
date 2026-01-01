@@ -7,6 +7,7 @@ import urllib.request
 import subprocess
 import winshell
 from win32com.client import Dispatch
+import pythoncom
 
 # Config
 REPO_URL = "https://raw.githubusercontent.com/Nurali033004/server-manager/main"
@@ -96,6 +97,7 @@ def create_shortcut(target, name, icon=None):
     shortcut.save()
 
 def install_logic(token, admin_id, progress_var, status_label, root):
+    pythoncom.CoInitialize()
     global current_lang
     txt = LANGUAGES[current_lang]
     install_dir = get_install_dir()
