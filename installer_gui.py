@@ -13,6 +13,8 @@ import pythoncom
 REPO_URL = "https://raw.githubusercontent.com/Nurali033004/server-manager/main"
 FILES_TO_DOWNLOAD = [
     ("SystemBot.exe", f"{REPO_URL}/SystemBot.exe"),
+    ("ControlPanel.exe", f"{REPO_URL}/ControlPanel.exe"),
+    ("SystemTray.exe", f"{REPO_URL}/SystemTray.exe"),
     ("start.bat", f"{REPO_URL}/start.bat"),
     ("stop.bat", f"{REPO_URL}/stop.bat"),
     ("uninstall.bat", f"{REPO_URL}/uninstall.bat"),
@@ -143,6 +145,8 @@ def install_logic(token, admin_id, progress_var, status_label, root):
         create_shortcut(os.path.join(install_dir, "start.bat"), "SystemBot START")
         create_shortcut(os.path.join(install_dir, "stop.bat"), "SystemBot STOP")
         create_shortcut(os.path.join(install_dir, "uninstall.bat"), "SystemBot UNINSTALL")
+        create_shortcut(os.path.join(install_dir, "ControlPanel.exe"), "System Manager Control Panel")
+        create_shortcut(os.path.join(install_dir, "SystemTray.exe"), "System Manager Tray")
         progress_var.set(90)
 
         # 5. Start Bot
