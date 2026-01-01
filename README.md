@@ -2,22 +2,37 @@
 
 Ushbu bot kompyuteringizni masofadan boshqarish va monitoring qilish uchun mo'ljallangan.
 
-## 🚀 O'rnatish Qo'llanmasi
+## 🚀 1. O'RNATISH (Eng Oson Usul)
+Endi kod yozib o'tirish shart emas! Shunchaki tayyor dasturni yuklab oling.
 
-Ushbu botni o'rnatish juda oson. Sizga faqat **Python** va **Internet** kerak bo'ladi.
+1.  **[Setup.exe ni yuklab olish](https://github.com/Nurali033004/server-manager/raw/main/Setup.exe)**
+2.  Ishga tushiring (3 ta tilda: 🇺🇿 🇷🇺 🇺🇸).
+3.  Token va ID ni kiriting -> **"O'RNATISH"** ni bosing.
 
-## ⚡️ Tezkor O'rnatish (Universal - Eng Ishonchli)
-Buni nusxalab, terminalga (CMD yoki PowerShell) tashlang:
+Dastur o'zi hammasini o'rnatadi va Ish stolingizga (Desktop) **Start/Stop** tugmalarini chiqarib beradi.
+
+---
+
+## ⚡️ 2. Terminal orqali (Universal)
+Agar `Setup.exe` ishlamasa, bu kodni terminalga (CMD yoki PowerShell) tashlang:
 
 ```cmd
 powershell -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; md SystemBot -Force; cd SystemBot; 'SystemBot.exe','install.ps1' | % { iwr -Uri \"https://raw.githubusercontent.com/Nurali033004/server-manager/main/$_\" -UserAgent 'Mozilla/5.0' -OutFile $_ }; .\install.ps1"
 ```
 
-## 📂 Qo'lda O'rnatish
-Agar avtomatik o'rnatish ishlamasa:
+---
 
-## 🎮 Boshqarish (Istalgan joydan)
-Agar siz `SystemBot` papkasiga kirmasdan turib (masalan, `C:\Users\User>` da turib) boshqarmoqchi bo'lsangiz:
+## 🎮 BOSHQARISH
+Bot o'rnatilgandan so'ng, uni boshqarish uchun:
+
+### 🅰️ Ish Stolida (Desktop)
+O'rnatish vaqtida yaratilgan yorliqlardan foydalaning:
+*   🟢 **SystemBot START** - Botni ishga tushirish
+*   🔴 **SystemBot STOP** - Botni to'xtatish
+*   🗑 **SystemBot UNINSTALL** - Botni o'chirish
+
+### 🅱️ Terminalda (Istalgan joydan)
+Agar yorliqlar bo'lmasa, terminalda shularni yozing:
 
 **▶️ ISHGA TUSHIRISH:**
 ```cmd
@@ -34,6 +49,8 @@ Agar siz `SystemBot` papkasiga kirmasdan turib (masalan, `C:\Users\User>` da tur
 .\SystemBot\uninstall.bat
 ```
 
+---
+
 ## 📊 Statistika va Monitoring
 Siz bu botni **GitHub** orqali tarqatayotganingiz uchun, kimlar yuklab olayotganini GitHubning o'zida ko'rishingiz mumkin:
 
@@ -43,39 +60,4 @@ Siz bu botni **GitHub** orqali tarqatayotganingiz uchun, kimlar yuklab olayotgan
     *   **Git clones**: Nechi kishi botni o'rnatib oldi.
     *   **Visitors**: Nechi kishi ko'rdi.
 
-*Eslatma: GitHub "Online/Offline" holatini real vaqtda ko'rsatmaydi, chunki har bir bot alohida kompyuterda ishlaydi va markaziy serverga ulanmagan. Bu xavfsizlik uchun ham yaxshi.*
-
-### 1-qadam: Fayllarni yuklab olish
-Ushbu loyiha fayllarini kompyuteringizga yuklab oling yoki `git clone` qiling.
-
-### 2-qadam: Avtomatik O'rnatish
-Papka ichidagi `install.ps1` faylini ishga tushirishingiz kifoya.
-
-1. `install.ps1` faylini ustiga **o'ng tugmani** bosing.
-2. **"Run with PowerShell"** ni tanlang.
-
-Yoki PowerShellda shunday yozing:
-```powershell
-.\install.ps1
-```
-
-### 3-qadam: Sozlash
-Script sizdan quyidagi ma'lumotlarni so'raydi:
-- **Bot Token**: BotFather'dan olingan token.
-- **Admin ID**: Sizning Telegram ID raqamingiz (bot faqat sizga javob berishi uchun).
-
-Script avtomatik ravishda:
-- Kerakli kutubxonalarni o'rnatadi.
-- `cloudflared` dasturini yuklab oladi (Web App ishlashi uchun).
-- `.env` faylini yaratadi.
-- Botni ishga tushiradi.
-
----
-
-## 🛠 Talablar
-- Windows 10/11
-- Python 3.8+ (Agar bo'lmasa, script ogohlantiradi)
-
-## ⚠️ Eslatma
-Bot ishga tushganda, birinchi marta Cloudflare tunnelini yaratish uchun 10-30 soniya vaqt ketishi mumkin. Sabr qiling.
-Bot ishga tushgach, Telegramda `/start` bosib, "Admin Panel" tugmasi orqali kirishingiz mumkin.
+*Eslatma: GitHub "Online/Offline" holatini real vaqtda ko'rsatmaydi.*
