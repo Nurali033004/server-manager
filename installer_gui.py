@@ -86,15 +86,19 @@ def get_install_dir():
     return os.path.join(os.path.expanduser("~"), "SystemBot")
 
 def create_shortcut(target, name, icon=None):
-    desktop = winshell.desktop()
-    path = os.path.join(desktop, f"{name}.lnk")
-    shell = Dispatch('WScript.Shell')
-    shortcut = shell.CreateShortCut(path)
-    shortcut.Targetpath = target
-    shortcut.WorkingDirectory = os.path.dirname(target)
-    if icon:
-        shortcut.IconLocation = icon
-    shortcut.save()
+    try:
+        pythoncom.CoInitialize()
+        desktop = winshell.desktop()
+        path = os.path.join(desktop, f"{name}.lnk")
+        shell = Dispatch('WScript.Shell')
+        shortcut = shell.CreateShortCut(path)
+        shortcut.Targetpath = target
+        shortcut.WorkingDirectory = os.path.dirname(target)
+        if icon:
+            shortcut.IconLocation = icon
+        shortcut.save()
+    except Exception as e:
+        print(f"Shortcut error: {e}")
 
 def install_logic(token, admin_id, progress_var, status_label, root):
     pythoncom.CoInitialize()
