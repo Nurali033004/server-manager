@@ -11,21 +11,21 @@ from dotenv import load_dotenv
 class SystemManager:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("System Manager")
-        self.root.geometry("1000x650")
+        self.root.title("System Manager - Radiant Edition")
+        self.root.geometry("1000x700")
         self.root.resizable(False, False)
         
-        # Dark theme colors
-        self.bg_dark = "#1a1a2e"
-        self.bg_card = "#252541"
-        self.accent_purple = "#7c3aed"
-        self.accent_cyan = "#06b6d4"
-        self.text_primary = "#ffffff"
-        self.text_secondary = "#94a3b8"
-        self.success_green = "#10b981"
-        self.error_red = "#ef4444"
+        # Radiant Purple Theme (Inspired by Image 4)
+        self.bg_black = "#050505"    # Pure deep black
+        self.bg_card = "#141416"     # Card background
+        self.accent_purple = "#8b5cf6" # Radiant purple
+        self.accent_cyan = "#06b6d4"   # Secondary cyan
+        self.text_primary = "#ffffff"  # White
+        self.text_dim = "#71717a"      # Muted text
+        self.btn_green = "#10b981"
+        self.btn_red = "#f43f5e"
         
-        self.root.configure(bg=self.bg_dark)
+        self.root.configure(bg=self.bg_black)
         
         # Get install directory
         self.install_dir = os.path.join(os.path.expanduser("~"), "SystemBot")
@@ -39,188 +39,163 @@ class SystemManager:
         self.update_status()
         
     def setup_ui(self):
-        # Header
-        header = tk.Frame(self.root, bg=self.bg_dark, height=80)
-        header.pack(fill=tk.X, padx=20, pady=(20, 10))
+        # --- HEADER ---
+        header = tk.Frame(self.root, bg=self.bg_black, height=100)
+        header.pack(fill=tk.X, padx=30, pady=(30, 20))
         
-        title = tk.Label(header, text="System Manager", font=("Segoe UI", 24, "bold"), 
-                        bg=self.bg_dark, fg=self.text_primary)
-        title.pack(side=tk.LEFT)
+        title_frame = tk.Frame(header, bg=self.bg_black)
+        title_frame.pack(side=tk.LEFT)
         
-        # Status indicator
-        self.status_frame = tk.Frame(header, bg=self.bg_card, padx=15, pady=8, relief=tk.FLAT)
-        self.status_frame.pack(side=tk.RIGHT)
+        tk.Label(title_frame, text="System", font=("Segoe UI", 28, "bold"), 
+                 bg=self.bg_black, fg=self.text_primary).pack(side=tk.LEFT)
+        tk.Label(title_frame, text="Manager", font=("Segoe UI", 28, "bold"), 
+                 bg=self.bg_black, fg=self.accent_purple).pack(side=tk.LEFT, padx=(5, 0))
         
-        self.status_dot = tk.Canvas(self.status_frame, width=12, height=12, bg=self.bg_card, highlightthickness=0)
-        self.status_dot.pack(side=tk.LEFT, padx=(0, 8))
-        self.status_circle = self.status_dot.create_oval(0, 0, 12, 12, fill=self.text_secondary, outline="")
+        # Top-right Status
+        self.status_card = tk.Frame(header, bg=self.bg_card, padx=20, pady=10)
+        self.status_card.pack(side=tk.RIGHT)
         
-        self.status_label = tk.Label(self.status_frame, text="Checking...", font=("Segoe UI", 10),
-                                     bg=self.bg_card, fg=self.text_secondary)
+        self.status_indicator = tk.Canvas(self.status_card, width=10, height=10, bg=self.bg_card, highlightthickness=0)
+        self.status_indicator.pack(side=tk.LEFT, padx=(0, 10))
+        self.status_dot = self.status_indicator.create_oval(0, 0, 10, 10, fill=self.text_dim, outline="")
+        
+        self.status_label = tk.Label(self.status_card, text="INIT", font=("Segoe UI", 10, "bold"),
+                                     bg=self.bg_card, fg=self.text_dim)
         self.status_label.pack(side=tk.LEFT)
+
+        # --- MAIN LAYOUT ---
+        content = tk.Frame(self.root, bg=self.bg_black)
+        content.pack(fill=tk.BOTH, expand=True, padx=30)
+
+        # 1. STATISTICS CARDS (Inspired by Image 3)
+        stats_frame = tk.Frame(content, bg=self.bg_black)
+        stats_frame.pack(fill=tk.X, pady=(0, 20))
+
+        # CPU Card
+        self.cpu_card = self.create_stat_card(stats_frame, "CPU USAGE", "0.0%", self.accent_purple)
+        self.cpu_card.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
+        self.cpu_val = self.cpu_card.winfo_children()[1]
+
+        # RAM Card
+        self.ram_card = self.create_stat_card(stats_frame, "MEMORY (RAM)", "0.0%", self.accent_cyan)
+        self.ram_card.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(10, 0))
+        self.ram_val = self.ram_card.winfo_children()[1]
+
+        # 2. CONTROLS & LOGS
+        main_body = tk.Frame(content, bg=self.bg_black)
+        main_body.pack(fill=tk.BOTH, expand=True)
+
+        # Left: Controls
+        left_body = tk.Frame(main_body, bg=self.bg_black, width=350)
+        left_body.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 20))
+
+        control_card = tk.Frame(left_body, bg=self.bg_card, padx=20, pady=20)
+        control_card.pack(fill=tk.X)
+
+        tk.Label(control_card, text="CORE CONTROLS", font=("Segoe UI", 9, "bold"), 
+                 bg=self.bg_card, fg=self.text_dim).pack(anchor="w", pady=(0, 15))
         
-        # Main container
-        main_container = tk.Frame(self.root, bg=self.bg_dark)
-        main_container.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
-        
-        # Left panel - Controls
-        left_panel = tk.Frame(main_container, bg=self.bg_card, width=450)
-        left_panel.pack(side=tk.LEFT, fill=tk.BOTH, padx=(0, 10))
-        
-        # Bot Controls Section
-        controls_label = tk.Label(left_panel, text="Bot Controls", font=("Segoe UI", 14, "bold"),
-                                 bg=self.bg_card, fg=self.text_primary, anchor="w")
-        controls_label.pack(fill=tk.X, padx=20, pady=15)
-        
-        button_frame = tk.Frame(left_panel, bg=self.bg_card)
-        button_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        self.start_btn = self.create_button(button_frame, "▶ Start Bot", self.start_bot, self.success_green)
+        self.start_btn = self.create_neon_button(control_card, "START BOT", self.start_bot, self.btn_green)
         self.start_btn.pack(fill=tk.X, pady=5)
         
-        self.stop_btn = self.create_button(button_frame, "⏹ Stop Bot", self.stop_bot, self.error_red)
+        self.stop_btn = self.create_neon_button(control_card, "STOP BOT", self.stop_bot, self.btn_red)
         self.stop_btn.pack(fill=tk.X, pady=5)
         
-        self.restart_btn = self.create_button(button_frame, "🔄 Restart Bot", self.restart_bot, self.accent_purple)
+        self.restart_btn = self.create_neon_button(control_card, "RESTART", self.restart_bot, self.accent_cyan)
         self.restart_btn.pack(fill=tk.X, pady=5)
-        
-        # System Info Section
-        info_label = tk.Label(left_panel, text="System Info", font=("Segoe UI", 14, "bold"),
-                             bg=self.bg_card, fg=self.text_primary, anchor="w")
-        info_label.pack(fill=tk.X, padx=20, pady=(20, 10))
-        
-        info_frame = tk.Frame(left_panel, bg=self.bg_card)
-        info_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        self.cpu_label = tk.Label(info_frame, text="CPU: ---%", font=("Segoe UI", 11),
-                                 bg=self.bg_card, fg=self.text_secondary, anchor="w")
-        self.cpu_label.pack(fill=tk.X, pady=3)
-        
-        self.ram_label = tk.Label(info_frame, text="RAM: ---%", font=("Segoe UI", 11),
-                                 bg=self.bg_card, fg=self.text_secondary, anchor="w")
-        self.ram_label.pack(fill=tk.X, pady=3)
-        
-        self.uptime_label = tk.Label(info_frame, text="Uptime: ---", font=("Segoe UI", 11),
-                                     bg=self.bg_card, fg=self.text_secondary, anchor="w")
-        self.uptime_label.pack(fill=tk.X, pady=3)
-        
-        # Quick Actions Section
-        actions_label = tk.Label(left_panel, text="Quick Actions", font=("Segoe UI", 14, "bold"),
-                                bg=self.bg_card, fg=self.text_primary, anchor="w")
-        actions_label.pack(fill=tk.X, padx=20, pady=(20, 10))
-        
-        actions_frame = tk.Frame(left_panel, bg=self.bg_card)
-        actions_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        open_logs_btn = self.create_button(actions_frame, "📂 Open Logs Folder", self.open_logs, self.accent_cyan)
-        open_logs_btn.pack(fill=tk.X, pady=5)
-        
-        open_folder_btn = self.create_button(actions_frame, "📁 Open Install Folder", self.open_folder, self.accent_cyan)
-        open_folder_btn.pack(fill=tk.X, pady=5)
-        
-        # Right panel - Logs
-        right_panel = tk.Frame(main_container, bg=self.bg_card)
-        right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-        
-        logs_label = tk.Label(right_panel, text="Activity Logs", font=("Segoe UI", 14, "bold"),
-                             bg=self.bg_card, fg=self.text_primary, anchor="w")
-        logs_label.pack(fill=tk.X, padx=20, pady=15)
-        
-        # Log viewer
-        log_container = tk.Frame(right_panel, bg=self.bg_card)
-        log_container.pack(fill=tk.BOTH, expand=True, padx=20, pady=(0, 20))
-        
-        self.log_text = scrolledtext.ScrolledText(log_container, wrap=tk.WORD, 
-                                                  bg="#16213e", fg=self.text_secondary,
-                                                  font=("Consolas", 9), insertbackground=self.text_primary,
-                                                  relief=tk.FLAT, padx=10, pady=10)
+
+        # Folder Actions
+        folder_card = tk.Frame(left_body, bg=self.bg_card, padx=20, pady=20)
+        folder_card.pack(fill=tk.X, pady=(20, 0))
+
+        tk.Label(folder_card, text="QUICK ACCESS", font=("Segoe UI", 9, "bold"), 
+                 bg=self.bg_card, fg=self.text_dim).pack(anchor="w", pady=(0, 15))
+
+        self.create_neon_button(folder_card, "OPEN LOGS", self.open_logs, self.accent_purple).pack(fill=tk.X, pady=5)
+        self.create_neon_button(folder_card, "INSTALL DIR", self.open_folder, self.text_dim).pack(fill=tk.X, pady=5)
+
+        # Right: Logs (Modern ScrolledText)
+        right_body = tk.Frame(main_body, bg=self.bg_card, padx=2)
+        right_body.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
+        self.log_text = scrolledtext.ScrolledText(right_body, wrap=tk.WORD, 
+                                                 bg="#0c0c0e", fg="#a1a1aa",
+                                                 font=("Consolas", 10), relief=tk.FLAT,
+                                                 padx=15, pady=15, borderwidth=0)
         self.log_text.pack(fill=tk.BOTH, expand=True)
-        self.log_text.insert("1.0", "System Manager - Activity Monitor\n" + "="*60 + "\n\n")
-        
-    def create_button(self, parent, text, command, color):
-        btn = tk.Button(parent, text=text, command=command, bg=color, fg="white",
-                       font=("Segoe UI", 11, "bold"), relief=tk.FLAT, cursor="hand2",
-                       padx=20, pady=12, activebackground=color, activeforeground="white")
+        self.log_text.insert("1.0", ">>> INITIALIZING SYSTEM MANAGER...\n" + "-"*40 + "\n")
+
+    def create_stat_card(self, parent, title, val, color):
+        card = tk.Frame(parent, bg=self.bg_card, padx=25, pady=25)
+        tk.Label(card, text=title, font=("Segoe UI", 9, "bold"), bg=self.bg_card, fg=self.text_dim).pack(anchor="w")
+        tk.Label(card, text=val, font=("Segoe UI", 24, "bold"), bg=self.bg_card, fg=color).pack(anchor="w", pady=(5, 0))
+        return card
+
+    def create_neon_button(self, parent, text, cmd, color):
+        # Simulated rounded-ish button using padding and relief
+        btn = tk.Button(parent, text=text, command=cmd, bg=color, fg="white" if color != self.text_dim else "black",
+                       font=("Segoe UI", 10, "bold"), relief=tk.FLAT, borderwidth=0,
+                       cursor="hand2", padx=10, pady=10, activebackground=self.text_primary)
         return btn
-    
+
     def is_bot_running(self):
         for proc in psutil.process_iter(['name']):
             try:
                 if proc.info['name'] == 'SystemBot.exe':
                     return True
-            except:
-                pass
+            except: pass
         return False
     
     def start_bot(self):
-        start_script = os.path.join(self.install_dir, "start.bat")
-        
-        if os.path.exists(start_script):
-            subprocess.Popen([start_script], shell=True, cwd=self.install_dir)
-            self.log("✅ Starting bot...")
+        script = os.path.join(self.install_dir, "start.bat")
+        if os.path.exists(script):
+            subprocess.Popen([script], shell=True, cwd=self.install_dir)
+            self.log("EVENT: Starting Bot Services...")
             threading.Timer(2.0, self.update_status).start()
-        else:
-            self.log("❌ Error: Start script not found!")
-            messagebox.showerror("Error", "Installation files not found!")
-    
+        else: self.log("ERROR: Installation directory unavailable.")
+
     def stop_bot(self):
-        stop_script = os.path.join(self.install_dir, "stop.bat")
-        
-        if os.path.exists(stop_script):
-            subprocess.Popen([stop_script], shell=True, cwd=self.install_dir)
-            self.log("⏹ Stopping bot...")
+        script = os.path.join(self.install_dir, "stop.bat")
+        if os.path.exists(script):
+            subprocess.Popen([script], shell=True, cwd=self.install_dir)
+            self.log("EVENT: Stopping Bot Services...")
             threading.Timer(2.0, self.update_status).start()
-        else:
-            self.log("❌ Error: Stop script not found!")
-    
+
     def restart_bot(self):
-        self.log("🔄 Restarting bot...")
+        self.log("ACTION: Restart Sequence Triggered.")
         self.stop_bot()
         threading.Timer(3.0, self.start_bot).start()
-    
+
     def open_logs(self):
-        log_dir = os.path.join(self.install_dir, "logs")
-        if os.path.exists(log_dir):
-            os.startfile(log_dir)
-            self.log("📂 Opened logs folder")
-        else:
-            self.log("❌ Logs folder not found!")
-    
+        path = os.path.join(self.install_dir, "logs")
+        if os.path.exists(path): os.startfile(path)
+
     def open_folder(self):
-        if os.path.exists(self.install_dir):
-            os.startfile(self.install_dir)
-            self.log("📁 Opened installation folder")
-        else:
-            self.log("❌ Installation folder not found!")
-    
+        if os.path.exists(self.install_dir): os.startfile(self.install_dir)
+
     def log(self, message):
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        self.log_text.insert(tk.END, f"[{timestamp}] {message}\n")
+        t = datetime.now().strftime("%H:%M:%S")
+        self.log_text.insert(tk.END, f"[{t}] {message}\n")
         self.log_text.see(tk.END)
-    
+
     def update_status(self):
-        running = self.is_bot_running()
-        
-        if running:
-            self.status_dot.itemconfig(self.status_circle, fill=self.success_green)
-            self.status_label.config(text="Running", fg=self.success_green)
+        active = self.is_bot_running()
+        if active:
+            self.status_indicator.itemconfig(self.status_dot, fill=self.btn_green)
+            self.status_label.config(text="SYSTEM ACTIVE", fg=self.btn_green)
         else:
-            self.status_dot.itemconfig(self.status_circle, fill=self.text_secondary)
-            self.status_label.config(text="Stopped", fg=self.text_secondary)
-        
-        # Update system info
+            self.status_indicator.itemconfig(self.status_dot, fill=self.text_dim)
+            self.status_label.config(text="SYSTEM IDLE", fg=self.text_dim)
+
         try:
-            cpu = psutil.cpu_percent(interval=0.1)
-            ram = psutil.virtual_memory().percent
-            
-            self.cpu_label.config(text=f"CPU: {cpu}%")
-            self.ram_label.config(text=f"RAM: {ram}%")
-        except:
-            pass
+            c = psutil.cpu_percent()
+            r = psutil.virtual_memory().percent
+            self.cpu_val.config(text=f"{c}%")
+            self.ram_val.config(text=f"{r}%")
+        except: pass
         
-        # Schedule next update
         self.root.after(3000, self.update_status)
-    
+
     def run(self):
         self.root.mainloop()
 

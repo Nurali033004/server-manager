@@ -23,58 +23,57 @@ FILES_TO_DOWNLOAD = [
 ]
 CLOUDFLARED_URL = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
 
-# Translations
 LANGUAGES = {
     "O'zbekcha 🇺🇿": {
-        "header": "SystemBot O'rnatish",
+        "header": "SystemManager O'rnatish",
         "token": "Bot Token (BotFather):",
         "admin_id": "Admin ID (Telegram):",
         "install": "O'RNATISH",
-        "creating_dir": "Papka yaratilmoqda...",
+        "creating_dir": "Tayyorgarlik...",
         "downloading": "Yuklanmoqda: {name}...",
-        "settings": "Sozlamalar saqlanmoqda...",
-        "shortcuts": "Yorliqlar yaratilmoqda...",
-        "starting": "Bot ishga tushirilmoqda...",
-        "success_title": "Muvaffaqiyat",
-        "success_msg": "O'rnatish tugadi! Bot ishga tushdi.\nIsh stolidagi yorliqlarni tekshiring.",
-        "error_title": "Xatolik",
-        "error_msg": "O'rnatishda xatolik yuz berdi:\n{error}",
+        "settings": "Sozlanmoqda...",
+        "shortcuts": "Yuzaga chiqarilmoqda...",
+        "starting": "Ishga tushirilmoqda...",
+        "success_title": "Tayyor",
+        "success_msg": "Ilova muvaffaqiyatli o'rnatildi!",
+        "error_title": "Xato",
+        "error_msg": "O'rnatishda xatolik: {error}",
         "warning_title": "Diqqat",
-        "warning_msg": "Iltimos, Token va ID ni kiriting!",
+        "warning_msg": "Ma'lumotlarni to'liq kiriting!",
         "ready": "Tayyor"
     },
     "Русский 🇷🇺": {
-        "header": "Установка SystemBot",
-        "token": "Бот Токен (BotFather):",
+        "header": "Установка SystemManager",
+        "token": "Токен бота (BotFather):",
         "admin_id": "Админ ID (Telegram):",
         "install": "УСТАНОВИТЬ",
-        "creating_dir": "Создание папки...",
+        "creating_dir": "Подготовка...",
         "downloading": "Загрузка: {name}...",
-        "settings": "Сохранение настроек...",
+        "settings": "Настройка...",
         "shortcuts": "Создание ярлыков...",
-        "starting": "Запуск бота...",
-        "success_title": "Успешно",
-        "success_msg": "Установка завершена! Бот запущен.\nПроверьте ярлыки на рабочем столе.",
+        "starting": "Запуск...",
+        "success_title": "Готово",
+        "success_msg": "Приложение успешно установлено!",
         "error_title": "Ошибка",
-        "error_msg": "Произошла ошибка при установке:\n{error}",
+        "error_msg": "Ошибка при установке: {error}",
         "warning_title": "Внимание",
         "warning_msg": "Пожалуйста, введите Токен и ID!",
-        "ready": "Готово"
+        "ready": "Готов"
     },
     "English 🇺🇸": {
-        "header": "SystemBot Setup",
+        "header": "SystemManager Setup",
         "token": "Bot Token (BotFather):",
         "admin_id": "Admin ID (Telegram):",
         "install": "INSTALL",
-        "creating_dir": "Creating directory...",
+        "creating_dir": "Preparing...",
         "downloading": "Downloading: {name}...",
         "settings": "Saving settings...",
         "shortcuts": "Creating shortcuts...",
-        "starting": "Starting bot...",
+        "starting": "Launching...",
         "success_title": "Success",
-        "success_msg": "Installation complete! Bot started.\nCheck Desktop for shortcuts.",
+        "success_msg": "Installation complete!",
         "error_title": "Error",
-        "error_msg": "Installation failed:\n{error}",
+        "error_msg": "An error occurred: {error}",
         "warning_title": "Warning",
         "warning_msg": "Please enter Token and ID!",
         "ready": "Ready"
@@ -95,11 +94,9 @@ def create_shortcut(target, name, icon=None):
         shortcut = shell.CreateShortCut(path)
         shortcut.Targetpath = target
         shortcut.WorkingDirectory = os.path.dirname(target)
-        if icon:
-            shortcut.IconLocation = icon
+        if icon: shortcut.IconLocation = icon
         shortcut.save()
-    except Exception as e:
-        print(f"Shortcut error: {e}")
+    except Exception as e: print(f"Shortcut error: {e}")
 
 def install_logic(token, admin_id, progress_var, status_label, root):
     pythoncom.CoInitialize()
@@ -108,65 +105,52 @@ def install_logic(token, admin_id, progress_var, status_label, root):
     install_dir = get_install_dir()
     
     try:
-        # 1. Create Directory
-        status_label.config(text=txt["creating_dir"])
         if not os.path.exists(install_dir):
             os.makedirs(install_dir)
-        progress_var.set(10)
-
-        # 2. Download Files
-        total_files = len(FILES_TO_DOWNLOAD) + 1 
-        current = 0
-        
-        for name, url in FILES_TO_DOWNLOAD:
+            
+        # Download files
+        for i, (name, url) in enumerate(FILES_TO_DOWNLOAD):
             status_label.config(text=txt["downloading"].format(name=name))
-            dest = os.path.join(install_dir, name)
-            urllib.request.urlretrieve(url, dest)
-            current += 1
-            progress_var.set(10 + (current / total_files * 60))
-        
+            urllib.request.urlretrieve(url, os.path.join(install_dir, name))
+            progress_var.set(10 + (i * 10))
+            root.update_idletasks()
+
         # Cloudflared
         status_label.config(text=txt["downloading"].format(name="cloudflared"))
-        cf_path = os.path.join(install_dir, "cloudflared.exe")
-        if not os.path.exists(cf_path):
-            urllib.request.urlretrieve(CLOUDFLARED_URL, cf_path)
+        urllib.request.urlretrieve(CLOUDFLARED_URL, os.path.join(install_dir, "cloudflared.exe"))
         progress_var.set(70)
 
-        # 3. Create .env
+        # .env
         status_label.config(text=txt["settings"])
-        env_path = os.path.join(install_dir, ".env")
-        with open(env_path, "w") as f:
-            f.write(f"BOT_TOKEN={token}\nADMIN_ID={admin_id}")
+        with open(os.path.join(install_dir, ".env"), "w") as f:
+            f.write(f"BOT_TOKEN={token}\nADMIN_ID={admin_id}\n")
         progress_var.set(80)
 
-        # 4. Create Shortcuts
+        # Shortcut
         status_label.config(text=txt["shortcuts"])
         create_shortcut(os.path.join(install_dir, "SystemManager.exe"), "System Manager")
         progress_var.set(90)
 
-        # 5. Start Bot
+        # Start
         status_label.config(text=txt["starting"])
-        subprocess.Popen([os.path.join(install_dir, "start.bat")], shell=True, cwd=install_dir)
+        subprocess.Popen([os.path.join(install_dir, "SystemManager.exe")], shell=True, cwd=install_dir)
         progress_var.set(100)
-        
+
         messagebox.showinfo(txt["success_title"], txt["success_msg"])
         root.quit()
-
+        
     except Exception as e:
         messagebox.showerror(txt["error_title"], txt["error_msg"].format(error=str(e)))
-        status_label.config(text=txt["error_title"])
-        install_btn.config(state=tk.NORMAL)
+        status_label.config(text="Error")
 
 def start_install():
-    global current_lang
-    txt = LANGUAGES[current_lang]
-    token = token_entry.get()
-    admin_id = admin_id_entry.get()
-
+    token = token_entry.get().strip()
+    admin_id = id_entry.get().strip()
+    
     if not token or not admin_id:
-        messagebox.showwarning(txt["warning_title"], txt["warning_msg"])
+        messagebox.showwarning(LANGUAGES[current_lang]["warning_title"], LANGUAGES[current_lang]["warning_msg"])
         return
-
+    
     install_btn.config(state=tk.DISABLED)
     threading.Thread(target=install_logic, args=(token, admin_id, progress_var, status_label, root)).start()
 
@@ -174,60 +158,73 @@ def change_language(event):
     global current_lang
     current_lang = lang_combo.get()
     txt = LANGUAGES[current_lang]
-    
     header_label.config(text=txt["header"])
     token_label.config(text=txt["token"])
-    admin_id_label.config(text=txt["admin_id"])
+    id_label.config(text=txt["admin_id"])
     install_btn.config(text=txt["install"])
     status_label.config(text=txt["ready"])
 
-# GUI Setup
+# --- UI SETUP ---
 root = tk.Tk()
-root.title("SystemBot Setup")
-root.geometry("400x420")
+root.title("SystemManager Setup")
+root.geometry("450x550")
 root.resizable(False, False)
 
-style = ttk.Style()
-style.theme_use('clam')
+# RADIANT DARK THEME for Setup
+bg_color = "#050505"
+card_color = "#141416"
+purple_color = "#8b5cf6"
+text_color = "#ffffff"
 
-# Main Frame
-main_frame = tk.Frame(root, padx=20, pady=10)
+root.configure(bg=bg_color)
+
+main_frame = tk.Frame(root, bg=bg_color, padx=30, pady=30)
 main_frame.pack(fill=tk.BOTH, expand=True)
 
-# Language Selector
-lang_frame = tk.Frame(main_frame)
-lang_frame.pack(fill=tk.X, pady=(0, 10))
-tk.Label(lang_frame, text="Language / Til / Язык:", font=("Arial", 8)).pack(side=tk.LEFT)
-lang_combo = ttk.Combobox(lang_frame, values=list(LANGUAGES.keys()), state="readonly")
-lang_combo.current(0)
-lang_combo.bind("<<ComboboxSelected>>", change_language)
+# Lang selection (Top right)
+lang_frame = tk.Frame(main_frame, bg=bg_color)
+lang_frame.pack(fill=tk.X)
+lang_combo = ttk.Combobox(lang_frame, values=list(LANGUAGES.keys()), state="readonly", width=12)
+lang_combo.set(current_lang)
 lang_combo.pack(side=tk.RIGHT)
+lang_combo.bind("<<ComboboxSelected>>", change_language)
 
 # Header
-header_label = tk.Label(main_frame, text=LANGUAGES[current_lang]["header"], font=("Arial", 16, "bold"), pady=10)
-header_label.pack()
+header_label = tk.Label(main_frame, text=LANGUAGES[current_lang]["header"], font=("Segoe UI", 20, "bold"), 
+                        bg=bg_color, fg=purple_color)
+header_label.pack(pady=(20, 30))
 
 # Inputs
-token_label = tk.Label(main_frame, text=LANGUAGES[current_lang]["token"], font=("Arial", 10))
-token_label.pack(anchor=tk.W)
-token_entry = tk.Entry(main_frame, width=40)
-token_entry.pack(fill=tk.X, pady=(0, 10))
+input_frame = tk.Frame(main_frame, bg=bg_color)
+input_frame.pack(fill=tk.X)
 
-admin_id_label = tk.Label(main_frame, text=LANGUAGES[current_lang]["admin_id"], font=("Arial", 10))
-admin_id_label.pack(anchor=tk.W)
-admin_id_entry = tk.Entry(main_frame, width=40)
-admin_id_entry.pack(fill=tk.X, pady=(0, 20))
+token_label = tk.Label(input_frame, text=LANGUAGES[current_lang]["token"], bg=bg_color, fg="#71717a", font=("Segoe UI", 9))
+token_label.pack(anchor="w")
+token_entry = tk.Entry(input_frame, bg=card_color, fg=text_color, insertbackground=text_color, relief=tk.FLAT, 
+                       font=("Segoe UI", 11), borderwidth=8)
+token_entry.pack(fill=tk.X, pady=(5, 15))
+
+id_label = tk.Label(input_frame, text=LANGUAGES[current_lang]["admin_id"], bg=bg_color, fg="#71717a", font=("Segoe UI", 9))
+id_label.pack(anchor="w")
+id_entry = tk.Entry(input_frame, bg=card_color, fg=text_color, insertbackground=text_color, relief=tk.FLAT, 
+                    font=("Segoe UI", 11), borderwidth=8)
+id_entry.pack(fill=tk.X, pady=(5, 15))
 
 # Progress
 progress_var = tk.DoubleVar()
-progress_bar = ttk.Progressbar(main_frame, variable=progress_var, maximum=100)
-progress_bar.pack(fill=tk.X, pady=10)
+style = ttk.Style()
+style.theme_use('default')
+style.configure("Radiant.Horizontal.TProgressbar", thickness=6, background=purple_color, troughcolor=card_color, borderwidth=0)
+progress_bar = ttk.Progressbar(main_frame, variable=progress_var, maximum=100, style="Radiant.Horizontal.TProgressbar")
+progress_bar.pack(fill=tk.X, pady=(20, 10))
 
-status_label = tk.Label(main_frame, text=LANGUAGES[current_lang]["ready"], font=("Arial", 9), fg="gray")
+status_label = tk.Label(main_frame, text=LANGUAGES[current_lang]["ready"], bg=bg_color, fg="#71717a", font=("Segoe UI", 9))
 status_label.pack()
 
-# Button
-install_btn = tk.Button(main_frame, text=LANGUAGES[current_lang]["install"], font=("Arial", 12, "bold"), bg="#4CAF50", fg="white", height=2, command=start_install)
-install_btn.pack(fill=tk.X, pady=20)
+# Install Button
+install_btn = tk.Button(main_frame, text=LANGUAGES[current_lang]["install"], command=start_install, 
+                        bg=purple_color, fg=text_color, font=("Segoe UI", 12, "bold"), relief=tk.FLAT, 
+                        cursor="hand2", pady=12)
+install_btn.pack(fill=tk.X, side=tk.BOTTOM, pady=20)
 
 root.mainloop()
