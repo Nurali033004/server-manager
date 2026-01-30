@@ -14,6 +14,8 @@ REPO_URL = "https://raw.githubusercontent.com/Nurali033004/server-manager/main"
 FILES_TO_DOWNLOAD = [
     ("SystemBot.exe", f"{REPO_URL}/SystemBot.exe"),
     ("SystemManager.exe", f"{REPO_URL}/SystemManager.exe"),
+    ("CloudIDEServer.exe", f"{REPO_URL}/CloudIDEServer.exe"),
+    ("assets/ide_index.html", f"{REPO_URL}/assets/ide_index.html"),
     ("start.bat", f"{REPO_URL}/start.bat"),
     ("stop.bat", f"{REPO_URL}/stop.bat"),
     ("uninstall.bat", f"{REPO_URL}/uninstall.bat"),
@@ -113,7 +115,11 @@ def install_logic(token, admin_id, progress_var, status_label, root):
         # Download files
         for i, (name, url) in enumerate(FILES_TO_DOWNLOAD):
             status_label.config(text=txt["downloading"].format(name=name))
-            urllib.request.urlretrieve(url, os.path.join(install_dir, name))
+            dest_path = os.path.join(install_dir, name)
+            dest_dir = os.path.dirname(dest_path)
+            if not os.path.exists(dest_dir):
+                os.makedirs(dest_dir)
+            urllib.request.urlretrieve(url, dest_path)
             progress_var.set(10 + (i * 10))
             root.update_idletasks()
 

@@ -41,7 +41,7 @@ class SystemManagerApp(ctk.CTk):
         # Sidebar
         self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0)
         self.sidebar.grid(row=0, column=0, sticky="nsew")
-        self.sidebar.grid_rowconfigure(4, weight=1)
+        self.sidebar.grid_rowconfigure(5, weight=1)
 
         self.logo_label = ctk.CTkLabel(self.sidebar, text="System\nManager", font=ctk.CTkFont(size=24, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
@@ -49,19 +49,22 @@ class SystemManagerApp(ctk.CTk):
         self.sidebar_btn_1 = ctk.CTkButton(self.sidebar, text="Dashboard", command=lambda: self.show_frame("dashboard"))
         self.sidebar_btn_1.grid(row=1, column=0, padx=20, pady=10)
         
-        self.sidebar_btn_2 = ctk.CTkButton(self.sidebar, text="Console Logs", command=lambda: self.show_frame("logs"))
+        self.sidebar_btn_2 = ctk.CTkButton(self.sidebar, text="Web IDE", command=lambda: self.show_frame("webide"))
         self.sidebar_btn_2.grid(row=2, column=0, padx=20, pady=10)
 
-        self.sidebar_btn_3 = ctk.CTkButton(self.sidebar, text="Settings", command=lambda: self.show_frame("settings"))
+        self.sidebar_btn_3 = ctk.CTkButton(self.sidebar, text="Console Logs", command=lambda: self.show_frame("logs"))
         self.sidebar_btn_3.grid(row=3, column=0, padx=20, pady=10)
+
+        self.sidebar_btn_4 = ctk.CTkButton(self.sidebar, text="Settings", command=lambda: self.show_frame("settings"))
+        self.sidebar_btn_4.grid(row=4, column=0, padx=20, pady=10)
 
         # Status Indicator in Sidebar (Bottom)
         self.status_label = ctk.CTkLabel(self.sidebar, text="STATUS: CHECKING", font=("Consolas", 12, "bold"))
-        self.status_label.grid(row=5, column=0, padx=20, pady=(10, 20))
+        self.status_label.grid(row=6, column=0, padx=20, pady=(10, 20))
 
         # Main Content Area
         self.frames = {}
-        for F in (DashboardPage, LogsPage, SettingsPage):
+        for F in (DashboardPage, LogsPage, SettingsPage, WebIDEPage):
             page_name = F.__name__
             frame = F(parent=self, controller=self)
             self.frames[page_name] = frame
@@ -71,11 +74,13 @@ class SystemManagerApp(ctk.CTk):
 
         # Start Background Threads
         self.running = True
+        self.web_process = None
+        self.tunnel_process = None
         self.monitoring_thread = threading.Thread(target=self.monitor_system, daemon=True)
         self.monitoring_thread.start()
 
     def show_frame(self, name):
-        mapping = {"dashboard": "DashboardPage", "logs": "LogsPage", "settings": "SettingsPage"}
+        mapping = {"dashboard": "DashboardPage", "logs": "LogsPage", "settings": "SettingsPage", "webide": "WebIDEPage"}
         frame = self.frames[mapping[name]]
         frame.tkraise()
 
@@ -292,6 +297,80 @@ class SettingsPage(ctk.CTkFrame):
 
     def change_appearance_mode(self, new_appearance_mode: str):
         ctk.set_appearance_mode(new_appearance_mode)
+
+class WebIDEPage(ctk.CTkFrame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+
+        self.label = ctk.CTkLabel(self, text="Web IDE Control", font=ctk.CTkFont(size=24, weight="bold"))
+        self.label.pack(padx=20, pady=20, anchor="w")
+
+        # Status Info
+        self.info_frame = ctk.CTkFrame(self)
+        self.info_frame.pack(padx=20, pady=10, fill="x")
+        
+        self.url_label = ctk.CTkLabel(self.info_frame, text="URL: Server Stopped", font=("Consolas", 14), text_color="gray")
+        self.url_label.pack(padx=20, pady=20)
+
+        # Controls
+        self.btn_frame = ctk.CTkFrame(self)
+        self.btn_frame.pack(padx=20, pady=10, fill="x")
+
+        self.start_web_btn = ctk.CTkButton(self.btn_frame, text="Start Cloud IDE", fg_color="#10b981", command=self.start_server)
+        self.start_web_btn.pack(side="left", padx=20, pady=20, expand=True, fill="x")
+
+        self.stop_web_btn = ctk.CTkButton(self.btn_frame, text="Stop Cloud IDE", fg_color="#ef4444", command=self.stop_server, state="disabled")
+        self.stop_web_btn.pack(side="left", padx=20, pady=20, expand=True, fill="x")
+
+        # Instructions
+        self.instr = ctk.CTkLabel(self, text="Tutorial:\n1. 'Start Cloud IDE' ni bosing.\n2. Tunnel URL paydo bo'lguncha kuting.\n3. Shu URL orqali botingizga kiring.", 
+                                  justify="left", text_color="gray")
+        self.instr.pack(padx=20, pady=20, anchor="w")
+
+    def start_server(self):
+        # Start Backend (Look for EXE first, then script)
+        exe_path = os.path.join(os.path.dirname(__file__), "CloudIDEServer.exe")
+        server_path = os.path.join(os.path.dirname(__file__), "web_server.py")
+        
+        if os.path.exists(exe_path):
+            self.controller.web_process = subprocess.Popen([exe_path], cwd=os.path.dirname(__file__))
+        else:
+            self.controller.web_process = subprocess.Popen([sys.executable, server_path], cwd=os.path.dirname(__file__))
+        
+        self.controller.log_msg("WEB: Backend started")
+        
+        # Start Cloudflare Tunnel (Assuming installed in SystemBot dir)
+        cf_path = os.path.join(self.controller.install_dir, "cloudflared.exe")
+        if os.path.exists(cf_path):
+            self.controller.tunnel_process = subprocess.Popen([cf_path, "tunnel", "--url", "http://localhost:8000"],
+                                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            threading.Thread(target=self.watch_tunnel, daemon=True).start()
+        else:
+            self.url_label.configure(text="URL: http://localhost:8000 (Local Only)", text_color="orange")
+            self.controller.log_msg("WEB: cloudflared.exe not found. Local link only.")
+
+        self.start_web_btn.configure(state="disabled")
+        self.stop_web_btn.configure(state="normal")
+
+    def watch_tunnel(self):
+        for line in self.controller.tunnel_process.stdout:
+            if "trycloudflare.com" in line:
+                url = "https://" + line.split("https://")[1].strip()
+                self.url_label.configure(text=f"URL: {url}", text_color="#10b981")
+                self.controller.log_msg(f"WEB: IDE is live at {url}")
+                break
+
+    def stop_server(self):
+        if self.controller.web_process:
+            self.controller.web_process.terminate()
+        if self.controller.tunnel_process:
+            self.controller.tunnel_process.terminate()
+        
+        self.url_label.configure(text="URL: Server Stopped", text_color="gray")
+        self.start_web_btn.configure(state="normal")
+        self.stop_web_btn.configure(state="disabled")
+        self.controller.log_msg("WEB: Cloud IDE Stopped.")
 
 if __name__ == "__main__":
     app = SystemManagerApp()
