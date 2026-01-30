@@ -68,6 +68,15 @@ async def git_push(message: str = Body(...), token: str = Depends(verify_token))
     except subprocess.CalledProcessError as e:
         return {"status": "error", "message": e.stderr or str(e)}
 
+@app.get("/api/system/logs")
+async def get_logs(token: str = Depends(verify_token)):
+    # Assuming logs are kept in a local file or we just return some status for now
+    # In a real app we'd read from SystemBot logs
+    log_file = PROJECT_DIR / "system_manager.log"
+    if log_file.exists():
+        return {"logs": log_file.read_text(encoding="utf-8")[-5000:]} # Last 5000 chars
+    return {"logs": "Hozircha loglar mavjud emas."}
+
 @app.get("/api/system/status")
 async def system_status(token: str = Depends(verify_token)):
     import psutil
