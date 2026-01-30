@@ -9,8 +9,18 @@ import time
 
 class SystemManagerTray:
     def __init__(self):
-        self.icon_path = r'C:/Users/User/.gemini/antigravity/brain/25ea2a1e-2140-461b-83dd-c20126ec5b45/system_manager_icon_1767257421817.png'
-        self.icon_image = Image.open(self.icon_path)
+        # Try to find icon in assets folder or current directory
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.icon_path = os.path.join(base_dir, "assets", "icon.ico") 
+        if not os.path.exists(self.icon_path):
+             self.icon_path = os.path.join(base_dir, "icon.ico")
+
+        if os.path.exists(self.icon_path):
+            self.icon_image = Image.open(self.icon_path)
+        else:
+            # Fallback: Create a simple colored square if icon missing
+            self.icon_image = Image.new('RGB', (64, 64), color = (73, 109, 137))
+
         self.install_dir = os.path.join(os.path.expanduser("~"), "SystemBot")
         
     def is_bot_running(self):

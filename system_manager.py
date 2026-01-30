@@ -1,5 +1,6 @@
+import customtkinter as ctk
 import tkinter as tk
-from tkinter import ttk, scrolledtext, messagebox
+from tkinter import messagebox
 import subprocess
 import os
 import psutil
@@ -7,198 +8,292 @@ import threading
 import time
 from datetime import datetime
 from dotenv import load_dotenv
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.animation import FuncAnimation
+import winreg
+import sys
 
-class SystemManager:
+# --- CONFIGURATION ---
+ctk.set_appearance_mode("Dark")
+ctk.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
+
+class SystemManagerApp(ctk.CTk):
     def __init__(self):
-        self.root = tk.Tk()
-        self.root.title("System Manager - Radiant Edition")
-        self.root.geometry("1000x700")
-        self.root.resizable(False, False)
-        
-        # Radiant Purple Theme (Inspired by Image 4)
-        self.bg_black = "#050505"    # Pure deep black
-        self.bg_card = "#141416"     # Card background
-        self.accent_purple = "#8b5cf6" # Radiant purple
-        self.accent_cyan = "#06b6d4"   # Secondary cyan
-        self.text_primary = "#ffffff"  # White
-        self.text_dim = "#71717a"      # Muted text
-        self.btn_green = "#10b981"
-        self.btn_red = "#f43f5e"
-        
-        self.root.configure(bg=self.bg_black)
-        
-        # Get install directory
+        super().__init__()
+
+        self.title("System Manager - Pro Edition")
+        self.geometry("1100x700")
+        self.resizable(False, False)
+
+        # State Variables
         self.install_dir = os.path.join(os.path.expanduser("~"), "SystemBot")
+        self.auto_start_var = ctk.BooleanVar(value=self.check_autostart())
+        self.alert_var = ctk.BooleanVar(value=False)
+        self.cpu_history = [0] * 60
+        self.ram_history = [0] * 60
+        self.time_history = list(range(60))
+
+        # Layout Logic
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+
+        # Sidebar
+        self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0)
+        self.sidebar.grid(row=0, column=0, sticky="nsew")
+        self.sidebar.grid_rowconfigure(4, weight=1)
+
+        self.logo_label = ctk.CTkLabel(self.sidebar, text="System\nManager", font=ctk.CTkFont(size=24, weight="bold"))
+        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
+
+        self.sidebar_btn_1 = ctk.CTkButton(self.sidebar, text="Dashboard", command=lambda: self.show_frame("dashboard"))
+        self.sidebar_btn_1.grid(row=1, column=0, padx=20, pady=10)
         
-        # Load environment
-        env_path = os.path.join(self.install_dir, ".env")
-        if os.path.exists(env_path):
-            load_dotenv(env_path)
-        
-        self.setup_ui()
-        self.update_status()
-        
-    def setup_ui(self):
-        # --- HEADER ---
-        header = tk.Frame(self.root, bg=self.bg_black, height=100)
-        header.pack(fill=tk.X, padx=30, pady=(30, 20))
-        
-        title_frame = tk.Frame(header, bg=self.bg_black)
-        title_frame.pack(side=tk.LEFT)
-        
-        tk.Label(title_frame, text="System", font=("Segoe UI", 28, "bold"), 
-                 bg=self.bg_black, fg=self.text_primary).pack(side=tk.LEFT)
-        tk.Label(title_frame, text="Manager", font=("Segoe UI", 28, "bold"), 
-                 bg=self.bg_black, fg=self.accent_purple).pack(side=tk.LEFT, padx=(5, 0))
-        
-        # Top-right Status
-        self.status_card = tk.Frame(header, bg=self.bg_card, padx=20, pady=10)
-        self.status_card.pack(side=tk.RIGHT)
-        
-        self.status_indicator = tk.Canvas(self.status_card, width=10, height=10, bg=self.bg_card, highlightthickness=0)
-        self.status_indicator.pack(side=tk.LEFT, padx=(0, 10))
-        self.status_dot = self.status_indicator.create_oval(0, 0, 10, 10, fill=self.text_dim, outline="")
-        
-        self.status_label = tk.Label(self.status_card, text="INIT", font=("Segoe UI", 10, "bold"),
-                                     bg=self.bg_card, fg=self.text_dim)
-        self.status_label.pack(side=tk.LEFT)
+        self.sidebar_btn_2 = ctk.CTkButton(self.sidebar, text="Console Logs", command=lambda: self.show_frame("logs"))
+        self.sidebar_btn_2.grid(row=2, column=0, padx=20, pady=10)
 
-        # --- MAIN LAYOUT ---
-        content = tk.Frame(self.root, bg=self.bg_black)
-        content.pack(fill=tk.BOTH, expand=True, padx=30)
+        self.sidebar_btn_3 = ctk.CTkButton(self.sidebar, text="Settings", command=lambda: self.show_frame("settings"))
+        self.sidebar_btn_3.grid(row=3, column=0, padx=20, pady=10)
 
-        # 1. STATISTICS CARDS (Inspired by Image 3)
-        stats_frame = tk.Frame(content, bg=self.bg_black)
-        stats_frame.pack(fill=tk.X, pady=(0, 20))
+        # Status Indicator in Sidebar (Bottom)
+        self.status_label = ctk.CTkLabel(self.sidebar, text="STATUS: CHECKING", font=("Consolas", 12, "bold"))
+        self.status_label.grid(row=5, column=0, padx=20, pady=(10, 20))
 
-        # CPU Card
-        self.cpu_card = self.create_stat_card(stats_frame, "CPU USAGE", "0.0%", self.accent_purple)
-        self.cpu_card.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
-        self.cpu_val = self.cpu_card.winfo_children()[1]
+        # Main Content Area
+        self.frames = {}
+        for F in (DashboardPage, LogsPage, SettingsPage):
+            page_name = F.__name__
+            frame = F(parent=self, controller=self)
+            self.frames[page_name] = frame
+            frame.grid(row=0, column=1, sticky="nsew")
 
-        # RAM Card
-        self.ram_card = self.create_stat_card(stats_frame, "MEMORY (RAM)", "0.0%", self.accent_cyan)
-        self.ram_card.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(10, 0))
-        self.ram_val = self.ram_card.winfo_children()[1]
+        self.show_frame("dashboard")
 
-        # 2. CONTROLS & LOGS
-        main_body = tk.Frame(content, bg=self.bg_black)
-        main_body.pack(fill=tk.BOTH, expand=True)
+        # Start Background Threads
+        self.running = True
+        self.monitoring_thread = threading.Thread(target=self.monitor_system, daemon=True)
+        self.monitoring_thread.start()
 
-        # Left: Controls
-        left_body = tk.Frame(main_body, bg=self.bg_black, width=350)
-        left_body.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 20))
+    def show_frame(self, name):
+        mapping = {"dashboard": "DashboardPage", "logs": "LogsPage", "settings": "SettingsPage"}
+        frame = self.frames[mapping[name]]
+        frame.tkraise()
 
-        control_card = tk.Frame(left_body, bg=self.bg_card, padx=20, pady=20)
-        control_card.pack(fill=tk.X)
+    def check_autostart(self):
+        try:
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_READ)
+            winreg.QueryValueEx(key, "SystemManagerBot")
+            key.Close()
+            return True
+        except WindowsError:
+            return False
 
-        tk.Label(control_card, text="CORE CONTROLS", font=("Segoe UI", 9, "bold"), 
-                 bg=self.bg_card, fg=self.text_dim).pack(anchor="w", pady=(0, 15))
-        
-        self.start_btn = self.create_neon_button(control_card, "START BOT", self.start_bot, self.btn_green)
-        self.start_btn.pack(fill=tk.X, pady=5)
-        
-        self.stop_btn = self.create_neon_button(control_card, "STOP BOT", self.stop_bot, self.btn_red)
-        self.stop_btn.pack(fill=tk.X, pady=5)
-        
-        self.restart_btn = self.create_neon_button(control_card, "RESTART", self.restart_bot, self.accent_cyan)
-        self.restart_btn.pack(fill=tk.X, pady=5)
+    def toggle_autostart(self):
+        exe_path = sys.executable  # In a real frozen app, this is the exe path
+        # If running as script, use python path + script path (Simplified for this context)
+        # Assuming this file is run directly or compiled
+        script_path = os.path.abspath(__file__)
+        cmd = f'"{sys.executable}" "{script_path}"' if not getattr(sys, 'frozen', False) else f'"{sys.executable}"'
 
-        # Folder Actions
-        folder_card = tk.Frame(left_body, bg=self.bg_card, padx=20, pady=20)
-        folder_card.pack(fill=tk.X, pady=(20, 0))
-
-        tk.Label(folder_card, text="QUICK ACCESS", font=("Segoe UI", 9, "bold"), 
-                 bg=self.bg_card, fg=self.text_dim).pack(anchor="w", pady=(0, 15))
-
-        self.create_neon_button(folder_card, "OPEN LOGS", self.open_logs, self.accent_purple).pack(fill=tk.X, pady=5)
-        self.create_neon_button(folder_card, "INSTALL DIR", self.open_folder, self.text_dim).pack(fill=tk.X, pady=5)
-
-        # Right: Logs (Modern ScrolledText)
-        right_body = tk.Frame(main_body, bg=self.bg_card, padx=2)
-        right_body.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
-
-        self.log_text = scrolledtext.ScrolledText(right_body, wrap=tk.WORD, 
-                                                 bg="#0c0c0e", fg="#a1a1aa",
-                                                 font=("Consolas", 10), relief=tk.FLAT,
-                                                 padx=15, pady=15, borderwidth=0)
-        self.log_text.pack(fill=tk.BOTH, expand=True)
-        self.log_text.insert("1.0", ">>> INITIALIZING SYSTEM MANAGER...\n" + "-"*40 + "\n")
-
-    def create_stat_card(self, parent, title, val, color):
-        card = tk.Frame(parent, bg=self.bg_card, padx=25, pady=25)
-        tk.Label(card, text=title, font=("Segoe UI", 9, "bold"), bg=self.bg_card, fg=self.text_dim).pack(anchor="w")
-        tk.Label(card, text=val, font=("Segoe UI", 24, "bold"), bg=self.bg_card, fg=color).pack(anchor="w", pady=(5, 0))
-        return card
-
-    def create_neon_button(self, parent, text, cmd, color):
-        # Simulated rounded-ish button using padding and relief
-        btn = tk.Button(parent, text=text, command=cmd, bg=color, fg="white" if color != self.text_dim else "black",
-                       font=("Segoe UI", 10, "bold"), relief=tk.FLAT, borderwidth=0,
-                       cursor="hand2", padx=10, pady=10, activebackground=self.text_primary)
-        return btn
-
-    def is_bot_running(self):
-        for proc in psutil.process_iter(['name']):
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_ALL_ACCESS)
+        if self.auto_start_var.get():
+            winreg.SetValueEx(key, "SystemManagerBot", 0, winreg.REG_SZ, cmd)
+            self.log_msg("Settings: Auto-start ENABLED")
+        else:
             try:
-                if proc.info['name'] == 'SystemBot.exe':
-                    return True
-            except: pass
-        return False
-    
-    def start_bot(self):
-        script = os.path.join(self.install_dir, "start.bat")
-        if os.path.exists(script):
-            subprocess.Popen([script], shell=True, cwd=self.install_dir)
-            self.log("EVENT: Starting Bot Services...")
-            threading.Timer(2.0, self.update_status).start()
-        else: self.log("ERROR: Installation directory unavailable.")
+                winreg.DeleteValue(key, "SystemManagerBot")
+                self.log_msg("Settings: Auto-start DISABLED")
+            except WindowsError: pass
+        key.Close()
 
-    def stop_bot(self):
-        script = os.path.join(self.install_dir, "stop.bat")
-        if os.path.exists(script):
-            subprocess.Popen([script], shell=True, cwd=self.install_dir)
-            self.log("EVENT: Stopping Bot Services...")
-            threading.Timer(2.0, self.update_status).start()
+    def monitor_system(self):
+        while self.running:
+            # CPU & RAM
+            cpu = psutil.cpu_percent(interval=1)
+            ram = psutil.virtual_memory().percent
+            
+            # Update History
+            self.cpu_history.append(cpu)
+            self.cpu_history.pop(0)
+            self.ram_history.append(ram)
+            self.ram_history.pop(0)
+
+            # Update GUI
+            self.frames["DashboardPage"].update_stats(cpu, ram)
+            self.frames["DashboardPage"].update_graph(self.cpu_history, self.ram_history)
+
+            # Bot Status
+            bot_running = False
+            for proc in psutil.process_iter(['name']):
+                if proc.info['name'] == 'SystemBot.exe':
+                    bot_running = True
+                    break
+            
+            status_text = "BOT ACTIVE" if bot_running else "BOT STOPPED"
+            status_color = "green" if bot_running else "red"
+            try:
+                self.status_label.configure(text=f"STATUS: {status_text}", text_color=status_color)
+            except: pass
+
+            # Alerts
+            if self.alert_var.get() and (cpu > 90 or ram > 90):
+                 # Simple beep or toast would be here, limiting frequency
+                 pass
+
+            time.sleep(0.5)
+
+    def log_msg(self, msg):
+        self.frames["LogsPage"].add_log(msg)
+
+    def on_closing(self):
+        self.running = False
+        self.destroy()
+
+# --- PAGES ---
+
+class DashboardPage(ctk.CTkFrame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+
+        # Header
+        self.label = ctk.CTkLabel(self, text="Dashboard", font=ctk.CTkFont(size=24, weight="bold"))
+        self.label.grid(row=0, column=0, columnspan=2, padx=20, pady=20, sticky="w")
+
+        # Stat Cards
+        self.cpu_card = self.create_stat_card("CPU Usage", "0%", 1, 0)
+        self.ram_card = self.create_stat_card("RAM Usage", "0%", 1, 1)
+
+        # Controls
+        self.controls_frame = ctk.CTkFrame(self)
+        self.controls_frame.grid(row=2, column=0, columnspan=2, padx=20, pady=20, sticky="ew")
+
+        self.start_btn = ctk.CTkButton(self.controls_frame, text="▶ START BOT", fg_color="#10b981", hover_color="#059669",
+                                       command=lambda: self.run_script("start.bat"))
+        self.start_btn.pack(side="left", padx=10, pady=10, expand=True, fill="x")
+
+        self.stop_btn = ctk.CTkButton(self.controls_frame, text="⏹ STOP BOT", fg_color="#ef4444", hover_color="#dc2626",
+                                      command=lambda: self.run_script("stop.bat"))
+        self.stop_btn.pack(side="left", padx=10, pady=10, expand=True, fill="x")
+
+        self.restart_btn = ctk.CTkButton(self.controls_frame, text="🔄 RESTART", fg_color="#3b82f6", hover_color="#2563eb",
+                                         command=self.restart_bot)
+        self.restart_btn.pack(side="left", padx=10, pady=10, expand=True, fill="x")
+
+        # Graph
+        self.graph_frame = ctk.CTkFrame(self)
+        self.graph_frame.grid(row=3, column=0, columnspan=2, padx=20, pady=(0, 20), sticky="nsew")
+        self.grid_rowconfigure(3, weight=1)
+
+        # Matplotlib Setup
+        self.fig, self.ax = plt.subplots(facecolor='#2b2b2b', figsize=(6, 3))
+        self.ax.set_facecolor('#2b2b2b')
+        self.line_cpu, = self.ax.plot([], [], label='CPU', color='#8b5cf6', linewidth=2)
+        self.line_ram, = self.ax.plot([], [], label='RAM', color='#06b6d4', linewidth=2)
+        
+        self.ax.set_ylim(0, 100)
+        self.ax.set_xlim(0, 60)
+        self.ax.grid(True, color='#404040')
+        self.ax.tick_params(axis='x', colors='white')
+        self.ax.tick_params(axis='y', colors='white')
+        self.ax.legend(facecolor='#2b2b2b', edgecolor='white', labelcolor='white')
+
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.graph_frame)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(fill="both", expand=True)
+
+    def create_stat_card(self, title, pct, r, c):
+        frame = ctk.CTkFrame(self)
+        frame.grid(row=r, column=c, padx=20, pady=10, sticky="ew")
+        
+        lbl_title = ctk.CTkLabel(frame, text=title, text_color="gray")
+        lbl_title.pack(padx=20, pady=(15, 0), anchor="w")
+        
+        lbl_val = ctk.CTkLabel(frame, text=pct, font=ctk.CTkFont(size=40, weight="bold"))
+        lbl_val.pack(padx=20, pady=(0, 15), anchor="w")
+        
+        return lbl_val
+
+    def update_stats(self, cpu, ram):
+        self.cpu_card.configure(text=f"{cpu}%")
+        self.ram_card.configure(text=f"{ram}%")
+
+    def update_graph(self, cpu_hist, ram_hist):
+        x_data = range(len(cpu_hist))
+        self.line_cpu.set_data(x_data, cpu_hist)
+        self.line_ram.set_data(x_data, ram_hist)
+        self.canvas.draw_idle()
+
+    def run_script(self, script_name):
+        path = os.path.join(self.controller.install_dir, script_name)
+        if os.path.exists(path):
+            subprocess.Popen([path], shell=True, cwd=self.controller.install_dir)
+            self.controller.log_msg(f"CMD: Executed {script_name}")
+        else:
+            self.controller.log_msg(f"ERROR: {script_name} not found")
 
     def restart_bot(self):
-        self.log("ACTION: Restart Sequence Triggered.")
-        self.stop_bot()
-        threading.Timer(3.0, self.start_bot).start()
+        self.run_script("stop.bat")
+        threading.Timer(3.0, lambda: self.run_script("start.bat")).start()
 
-    def open_logs(self):
-        path = os.path.join(self.install_dir, "logs")
-        if os.path.exists(path): os.startfile(path)
-
-    def open_folder(self):
-        if os.path.exists(self.install_dir): os.startfile(self.install_dir)
-
-    def log(self, message):
-        t = datetime.now().strftime("%H:%M:%S")
-        self.log_text.insert(tk.END, f"[{t}] {message}\n")
-        self.log_text.see(tk.END)
-
-    def update_status(self):
-        active = self.is_bot_running()
-        if active:
-            self.status_indicator.itemconfig(self.status_dot, fill=self.btn_green)
-            self.status_label.config(text="SYSTEM ACTIVE", fg=self.btn_green)
-        else:
-            self.status_indicator.itemconfig(self.status_dot, fill=self.text_dim)
-            self.status_label.config(text="SYSTEM IDLE", fg=self.text_dim)
-
-        try:
-            c = psutil.cpu_percent()
-            r = psutil.virtual_memory().percent
-            self.cpu_val.config(text=f"{c}%")
-            self.ram_val.config(text=f"{r}%")
-        except: pass
+class LogsPage(ctk.CTkFrame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.label = ctk.CTkLabel(self, text="Console Logs", font=ctk.CTkFont(size=24, weight="bold"))
+        self.label.pack(padx=20, pady=20, anchor="w")
         
-        self.root.after(3000, self.update_status)
+        self.textbox = ctk.CTkTextbox(self, font=("Consolas", 12))
+        self.textbox.pack(padx=20, pady=(0, 20), fill="both", expand=True)
+        
+        self.add_log("System Manager Initialized...")
 
-    def run(self):
-        self.root.mainloop()
+    def add_log(self, message):
+        t = datetime.now().strftime("%H:%M:%S")
+        try:
+            self.textbox.insert("end", f"[{t}] {message}\n")
+            self.textbox.see("end")
+        except: pass
+
+class SettingsPage(ctk.CTkFrame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        
+        self.label = ctk.CTkLabel(self, text="Settings", font=ctk.CTkFont(size=24, weight="bold"))
+        self.label.pack(padx=20, pady=20, anchor="w")
+
+        # Appearance
+        self.frame_1 = ctk.CTkFrame(self)
+        self.frame_1.pack(padx=20, pady=10, fill="x")
+        
+        ctk.CTkLabel(self.frame_1, text="Appearance Mode:", font=("Arial", 14, "bold")).pack(padx=20, pady=(20, 5), anchor="w")
+        self.appear_opt = ctk.CTkOptionMenu(self.frame_1, values=["Dark", "Light", "System"], command=self.change_appearance_mode)
+        self.appear_opt.pack(padx=20, pady=(0, 20), anchor="w")
+
+        # Auto Start
+        self.frame_2 = ctk.CTkFrame(self)
+        self.frame_2.pack(padx=20, pady=10, fill="x")
+        
+        self.sw_autostart = ctk.CTkSwitch(self.frame_2, text="Auto-start on Login", 
+                                          variable=self.controller.auto_start_var, 
+                                          command=self.controller.toggle_autostart)
+        self.sw_autostart.pack(padx=20, pady=20, anchor="w")
+
+        # Alerts
+        self.frame_3 = ctk.CTkFrame(self)
+        self.frame_3.pack(padx=20, pady=10, fill="x")
+        
+        self.sw_alert = ctk.CTkSwitch(self.frame_3, text="High Usage Alerts (>90%)", 
+                                      variable=self.controller.alert_var)
+        self.sw_alert.pack(padx=20, pady=20, anchor="w")
+
+    def change_appearance_mode(self, new_appearance_mode: str):
+        ctk.set_appearance_mode(new_appearance_mode)
 
 if __name__ == "__main__":
-    app = SystemManager()
-    app.run()
+    app = SystemManagerApp()
+    app.protocol("WM_DELETE_WINDOW", app.on_closing)
+    app.mainloop()

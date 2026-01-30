@@ -85,7 +85,6 @@ current_lang = "O'zbekcha 🇺🇿"
 def get_install_dir():
     return os.path.join(os.path.expanduser("~"), "SystemBot")
 
-def create_shortcut(target, name, icon=None):
     try:
         pythoncom.CoInitialize()
         desktop = winshell.desktop()
@@ -94,9 +93,11 @@ def create_shortcut(target, name, icon=None):
         shortcut = shell.CreateShortCut(path)
         shortcut.Targetpath = target
         shortcut.WorkingDirectory = os.path.dirname(target)
-        if icon: shortcut.IconLocation = icon
+        if icon and os.path.exists(icon):
+            shortcut.IconLocation = icon
         shortcut.save()
-    except Exception as e: print(f"Shortcut error: {e}")
+    except Exception as e:
+        print(f"Shortcut error: {e}")
 
 def install_logic(token, admin_id, progress_var, status_label, root):
     pythoncom.CoInitialize()
