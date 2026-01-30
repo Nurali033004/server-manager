@@ -39,29 +39,29 @@ class SystemManagerTray:
         if os.path.exists(stop_script):
             subprocess.Popen([stop_script], shell=True, cwd=self.install_dir)
     
-    def open_control_panel(self, icon, item):
-        control_panel = os.path.join(os.path.dirname(__file__), "control_panel.py")
-        if os.path.exists(control_panel):
-            subprocess.Popen(['py', control_panel])
+    def open_manager(self, icon, item):
+        manager_exe = os.path.join(self.install_dir, "SystemManager.exe")
+        if os.path.exists(manager_exe):
+            subprocess.Popen([manager_exe])
     
     def open_logs(self, icon, item):
-        log_dir = os.path.join(self.install_dir, "logs")
-        if os.path.exists(log_dir):
-            os.startfile(log_dir)
+        log_file = os.path.join(self.install_dir, "system_manager.log")
+        if os.path.exists(log_file):
+            os.startfile(log_file)
     
     def exit_app(self, icon, item):
         icon.stop()
     
     def create_menu(self):
         return pystray.Menu(
-            item('System Manager', lambda: None, enabled=False),
+            item('System Manager Pro', lambda: None, enabled=False),
             pystray.Menu.SEPARATOR,
-            item('Control Panel', self.open_control_panel),
+            item('Open Manager', self.open_manager),
             pystray.Menu.SEPARATOR,
             item('Start Bot', self.start_bot),
             item('Stop Bot', self.stop_bot),
             pystray.Menu.SEPARATOR,
-            item('Open Logs', self.open_logs),
+            item('View Logs', self.open_logs),
             pystray.Menu.SEPARATOR,
             item('Exit', self.exit_app)
         )

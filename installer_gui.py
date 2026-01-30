@@ -8,6 +8,7 @@ import subprocess
 import winshell
 from win32com.client import Dispatch
 import pythoncom
+import psutil
 
 # Config
 REPO_URL = "https://raw.githubusercontent.com/Nurali033004/server-manager/main"
@@ -111,6 +112,15 @@ def install_logic(token, admin_id, progress_var, status_label, root):
     try:
         if not os.path.exists(install_dir):
             os.makedirs(install_dir)
+        
+        # Kill running processes to allow overwriting
+        status_label.config(text="Eski jarayonlar to'xtatilmoqda...")
+        for proc in psutil.process_iter(['name']):
+            if proc.info['name'] in ['SystemManager.exe', 'SystemTray.exe', 'SystemBot.exe', 'CloudIDEServer.exe']:
+                try: proc.kill()
+                except: pass
+        import time
+        time.sleep(1) # Wait for release
             
         # Download files
         for i, (name, url) in enumerate(FILES_TO_DOWNLOAD):
