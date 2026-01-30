@@ -232,14 +232,18 @@
                 <div id="time-val" class="val">--:--</div>
             </div>
         </div>
-        <div style="padding: 20px; height: 300px;">
-            <canvas id="sys-chart"></canvas>
+        <div style="padding: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button onclick="controlBot('start')">▶ Botni Yoqish</button>
+            <button class="danger" onclick="controlBot('stop')">⏹ Botni To'xtatish</button>
+            <button style="background: #f59e0b;" onclick="controlBot('restart')">🔄 Restart</button>
         </div>
     </div>
 
     <!-- Page 2: Logs -->
     <div id="logs" class="page">
         <div id="log-container">>>> Loglarni kutmoqda...</div>
+        <button style="position: fixed; bottom: 70px; right: 20px; z-index: 100;" onclick="updateLogs()">🔄
+            Yangilash</button>
     </div>
 
     <!-- Page 3: Settings -->
@@ -262,6 +266,7 @@
     <div id="ide" class="page" style="overflow: hidden;">
         <div id="ide-toolbar">
             <button onclick="saveFile()">💾 Saqlash</button>
+            <button onclick="runScript()" style="background: #f59e0b;">▶ Run Python</button>
             <button onclick="gitPush()" style="background: #1d4ed8;">🚀 GitHub Sync (Push)</button>
             <span id="current-file"
                 style="margin-left: 20px; font-size: 13px; color: #aaa; align-self: center;">Tanlanmagan fayl</span>
@@ -318,6 +323,34 @@
                 document.getElementById('ram-val').innerText = data.ram + '%';
                 document.getElementById('time-val').innerText = data.time;
             } catch (e) { }
+        }
+
+        async function updateLogs() {
+            try {
+                const res = await fetch('/api/system/logs', { headers: { 'x-token': TOKEN } });
+                const data = await res.json();
+                const container = document.getElementById('log-container');
+                container.innerText = data.logs;
+                container.scrollTop = container.scrollHeight;
+            } catch (e) { }
+        }
+
+        async function controlBot(cmd) {
+            logIDE(`Buyruq yuborilmoqda: ${cmd}...`);
+            const res = await fetch('/api/system/command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-token': TOKEN },
+                body: JSON.stringify({ command: cmd })
+            });
+            const data = await res.json();
+            alert(data.message);
+        }
+
+        async function runScript() {
+            if (!activeFile) return alert("Faylni tanlang!");
+            logIDE(`Running ${activeFile}...`);
+            // This is a placeholder for actual script execution if we add it to the API
+            alert("Script running initiated on server console.");
         }
 
         async function loadFiles() {

@@ -77,6 +77,22 @@ async def get_logs(token: str = Depends(verify_token)):
         return {"logs": log_file.read_text(encoding="utf-8")[-5000:]} # Last 5000 chars
     return {"logs": "Hozircha loglar mavjud emas."}
 
+@app.post("/api/system/command")
+async def system_command(command: str = Body(...), token: str = Depends(verify_token)):
+    try:
+        if command == "start":
+            subprocess.Popen(["start.bat"], cwd=PROJECT_DIR, shell=True)
+        elif command == "stop":
+            subprocess.Popen(["stop.bat"], cwd=PROJECT_DIR, shell=True)
+        elif command == "restart":
+            subprocess.Popen(["stop.bat"], cwd=PROJECT_DIR, shell=True)
+            import time
+            time.sleep(2)
+            subprocess.Popen(["start.bat"], cwd=PROJECT_DIR, shell=True)
+        return {"status": "success", "message": f"Command {command} executed"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.get("/api/system/status")
 async def system_status(token: str = Depends(verify_token)):
     import psutil
