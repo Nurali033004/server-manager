@@ -85,6 +85,7 @@ current_lang = "O'zbekcha 🇺🇿"
 def get_install_dir():
     return os.path.join(os.path.expanduser("~"), "SystemBot")
 
+def create_shortcut(target, name, icon=None):
     try:
         pythoncom.CoInitialize()
         desktop = winshell.desktop()
